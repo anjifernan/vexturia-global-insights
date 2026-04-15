@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Link, Routes, Route, Navigate } from "react-router-dom";
-import { LayoutDashboard, Users, Building2, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Building2, Settings, LogOut, CalendarDays } from "lucide-react";
 import AdminLogin from "./AdminLogin";
 import AdminDashboard from "./AdminDashboard";
 import AdminLeads from "./AdminLeads";
 import AdminProperties from "./AdminProperties";
 import AdminConfig from "./AdminConfig";
+import AdminRentals from "./AdminRentals";
 
 const navItems = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
   { label: "Leads", path: "/admin/leads", icon: Users },
   { label: "Inmuebles", path: "/admin/inmuebles", icon: Building2 },
+  { label: "Alquileres Turísticos", path: "/admin/alquileres", icon: CalendarDays },
   { label: "Configuración", path: "/admin/configuracion", icon: Settings },
 ];
 
@@ -53,6 +55,7 @@ export default function AdminLayout() {
           <Route index element={<AdminDashboard />} />
           <Route path="leads" element={<AdminLeads />} />
           <Route path="inmuebles" element={<AdminProperties />} />
+          <Route path="alquileres" element={<AdminRentals />} />
           <Route path="configuracion" element={<AdminConfig />} />
         </Routes>
       </main>
