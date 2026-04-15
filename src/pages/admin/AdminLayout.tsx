@@ -55,6 +55,7 @@ export default function AdminLayout() {
           <Route index element={<AdminDashboard />} />
           <Route path="leads" element={<AdminLeads />} />
           <Route path="inmuebles" element={<AdminProperties />} />
+          <Route path="alquileres" element={<AdminRentals />} />
           <Route path="configuracion" element={<AdminConfig />} />
         </Routes>
       </main>
