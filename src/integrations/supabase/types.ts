@@ -14,7 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      propiedades_turisticas: {
+        Row: {
+          capacidad_maxima: number
+          created_at: string
+          direccion: string
+          estado: string
+          id: string
+          imagen_url: string | null
+          nombre: string
+          notas: string | null
+          num_habitaciones: number
+          precio_noche: number
+          updated_at: string
+        }
+        Insert: {
+          capacidad_maxima?: number
+          created_at?: string
+          direccion: string
+          estado?: string
+          id?: string
+          imagen_url?: string | null
+          nombre: string
+          notas?: string | null
+          num_habitaciones?: number
+          precio_noche?: number
+          updated_at?: string
+        }
+        Update: {
+          capacidad_maxima?: number
+          created_at?: string
+          direccion?: string
+          estado?: string
+          id?: string
+          imagen_url?: string | null
+          nombre?: string
+          notas?: string | null
+          num_habitaciones?: number
+          precio_noche?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reservas_turisticas: {
+        Row: {
+          created_at: string
+          email_huesped: string | null
+          estado: string
+          fecha_entrada: string
+          fecha_salida: string
+          id: string
+          importe_total: number
+          nacionalidad: string | null
+          nombre_huesped: string
+          notas: string | null
+          precio_noche: number
+          propiedad_id: string
+          telefono_huesped: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_huesped?: string | null
+          estado?: string
+          fecha_entrada: string
+          fecha_salida: string
+          id?: string
+          importe_total?: number
+          nacionalidad?: string | null
+          nombre_huesped: string
+          notas?: string | null
+          precio_noche?: number
+          propiedad_id: string
+          telefono_huesped?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_huesped?: string | null
+          estado?: string
+          fecha_entrada?: string
+          fecha_salida?: string
+          id?: string
+          importe_total?: number
+          nacionalidad?: string | null
+          nombre_huesped?: string
+          notas?: string | null
+          precio_noche?: number
+          propiedad_id?: string
+          telefono_huesped?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservas_turisticas_propiedad_id_fkey"
+            columns: ["propiedad_id"]
+            isOneToOne: false
+            referencedRelation: "propiedades_turisticas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
