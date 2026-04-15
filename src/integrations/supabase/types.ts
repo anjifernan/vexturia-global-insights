@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      leads: {
+        Row: {
+          created_at: string
+          email: string | null
+          estado: string
+          id: string
+          nombre: string
+          origen: string
+          telefono: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          estado?: string
+          id?: string
+          nombre: string
+          origen?: string
+          telefono?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          estado?: string
+          id?: string
+          nombre?: string
+          origen?: string
+          telefono?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       propiedades_turisticas: {
         Row: {
           capacidad_maxima: number
