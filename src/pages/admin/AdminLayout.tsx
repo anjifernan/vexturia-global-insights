@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { Link, Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, Routes, Route } from "react-router-dom";
 import { LayoutDashboard, Users, Building2, Settings, LogOut, CalendarDays } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 import AdminLogin from "./AdminLogin";
 import AdminDashboard from "./AdminDashboard";
 import AdminLeads from "./AdminLeads";
@@ -17,15 +19,43 @@ const navItems = [
 ];
 
 export default function AdminLayout() {
-  const [authenticated, setAuthenticated] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!authenticated) {
-    return <AdminLogin onLogin={() => setAuthenticated(true)} />;
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setLoading(false);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30">
+        <p className="text-muted-foreground">Cargando...</p>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <AdminLogin onLogin={() => {}} />;
   }
 
   return (
     <div className="min-h-screen flex bg-muted/30">
-      {/* Sidebar */}
       <aside className="w-64 bg-card border-r shrink-0 p-6 flex flex-col">
         <h2 className="text-lg font-extrabold mb-8">VEXTURIA</h2>
         <nav className="flex flex-col gap-1 flex-1">
@@ -40,8 +70,11 @@ export default function AdminLayout() {
             </Link>
           ))}
         </nav>
+        <div className="text-xs text-muted-foreground mb-2 truncate">
+          {session.user.email}
+        </div>
         <button
-          onClick={() => setAuthenticated(false)}
+          onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
           <LogOut className="h-4 w-4" />
@@ -49,7 +82,6 @@ export default function AdminLayout() {
         </button>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 p-8 overflow-auto">
         <Routes>
           <Route index element={<AdminDashboard />} />
