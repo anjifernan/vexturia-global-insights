@@ -4,6 +4,13 @@ import Layout from "@/components/layout/Layout";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const steps = ["Localización", "Características", "Estado y extras", "Resultado"];
 
@@ -35,12 +42,20 @@ export default function Valuation() {
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Post-valuation contact modal
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactNombre, setContactNombre] = useState("");
+  const [contactTelefono, setContactTelefono] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+
   const toggleExtra = (e: string) => {
     setExtras((prev) => prev.includes(e) ? prev.filter((x) => x !== e) : [...prev, e]);
   };
 
   const chipClass = (selected: boolean) =>
-    `px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
+    `px-4 py-2 rounded-full border text-sm font-medium transition-colors cursor-pointer ${
       selected
         ? "bg-primary text-primary-foreground border-primary"
         : "hover:bg-primary/10"
@@ -65,6 +80,36 @@ export default function Valuation() {
     } else {
       setLeadSubmitted(true);
       toast.success("¡Datos enviados! Aquí tienes tu valoración.");
+    }
+  };
+
+  const openContactModal = () => {
+    setContactNombre(nombre);
+    setContactTelefono(telefono);
+    setContactEmail(email);
+    setContactSubmitted(false);
+    setContactModalOpen(true);
+  };
+
+  const submitContactLead = async () => {
+    if (!contactNombre.trim() || !contactTelefono.trim() || !contactEmail.trim()) {
+      toast.error("Rellena todos los campos");
+      return;
+    }
+    setContactSubmitting(true);
+    const { error } = await supabase.from("leads").insert({
+      nombre: contactNombre.trim(),
+      telefono: contactTelefono.trim(),
+      email: contactEmail.trim(),
+      origen: "valoracion-contacto",
+    });
+    setContactSubmitting(false);
+    if (error) {
+      toast.error("Error al enviar los datos");
+      console.error(error);
+    } else {
+      setContactSubmitted(true);
+      toast.success("¡Solicitud enviada! Un experto te contactará pronto.");
     }
   };
 
@@ -176,7 +221,7 @@ export default function Valuation() {
                     <p className="text-sm text-muted-foreground mt-2">Precio por m²: 2.850 €/m²</p>
                   </div>
                   <p className="text-sm text-muted-foreground">Factores analizados: localización, superficie, estado, extras, demanda de zona</p>
-                  <Button variant="outline" onClick={() => window.location.href = "/contacto"}>
+                  <Button variant="outline" onClick={openContactModal}>
                     Quiero que un experto contacte conmigo
                   </Button>
                 </>
@@ -194,6 +239,33 @@ export default function Valuation() {
           )}
         </div>
       </section>
+
+      {/* Contact modal post-valuation */}
+      <Dialog open={contactModalOpen} onOpenChange={setContactModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Solicitar contacto con un experto</DialogTitle>
+            <DialogDescription>Confirma tus datos y un asesor te contactará en breve.</DialogDescription>
+          </DialogHeader>
+          {!contactSubmitted ? (
+            <div className="space-y-3">
+              <input value={contactNombre} onChange={(e) => setContactNombre(e.target.value)} placeholder="Nombre completo" className="w-full border rounded-lg px-4 py-3 text-sm bg-muted" />
+              <input value={contactTelefono} onChange={(e) => setContactTelefono(e.target.value)} placeholder="Teléfono" className="w-full border rounded-lg px-4 py-3 text-sm bg-muted" />
+              <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="Email" type="email" className="w-full border rounded-lg px-4 py-3 text-sm bg-muted" />
+              <Button className="w-full" onClick={submitContactLead} disabled={contactSubmitting}>
+                {contactSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Enviar solicitud
+              </Button>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <CheckCircle className="h-12 w-12 text-primary mx-auto mb-3" />
+              <p className="font-semibold">¡Solicitud enviada!</p>
+              <p className="text-sm text-muted-foreground mt-1">Un experto se pondrá en contacto contigo pronto.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
