@@ -59,15 +59,20 @@ export type Database = {
       reservas_turisticas: {
         Row: {
           created_at: string
+          direccion_huesped: string | null
           email_huesped: string | null
           estado: string
           fecha_entrada: string
           fecha_salida: string
           id: string
+          importe_anticipo: number
+          importe_pendiente: number
           importe_total: number
           nacionalidad: string | null
           nombre_huesped: string
           notas: string | null
+          num_adultos: number
+          num_ninos: number
           precio_noche: number
           propiedad_id: string
           telefono_huesped: string | null
@@ -75,15 +80,20 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          direccion_huesped?: string | null
           email_huesped?: string | null
           estado?: string
           fecha_entrada: string
           fecha_salida: string
           id?: string
+          importe_anticipo?: number
+          importe_pendiente?: number
           importe_total?: number
           nacionalidad?: string | null
           nombre_huesped: string
           notas?: string | null
+          num_adultos?: number
+          num_ninos?: number
           precio_noche?: number
           propiedad_id: string
           telefono_huesped?: string | null
@@ -91,15 +101,20 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          direccion_huesped?: string | null
           email_huesped?: string | null
           estado?: string
           fecha_entrada?: string
           fecha_salida?: string
           id?: string
+          importe_anticipo?: number
+          importe_pendiente?: number
           importe_total?: number
           nacionalidad?: string | null
           nombre_huesped?: string
           notas?: string | null
+          num_adultos?: number
+          num_ninos?: number
           precio_noche?: number
           propiedad_id?: string
           telefono_huesped?: string | null
