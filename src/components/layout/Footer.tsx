@@ -1,11 +1,28 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Footer() {
+  const [telefono, setTelefono] = useState("+34 661 404 384");
+  const [email, setEmail] = useState("info@vexturia.com");
+  const [direccion, setDireccion] = useState("Huelva, España");
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      const { data } = await supabase.from("configuracion").select("*").limit(1).maybeSingle();
+      if (data) {
+        if (data.telefono) setTelefono(data.telefono);
+        if (data.email) setEmail(data.email);
+        if (data.direccion) setDireccion(data.direccion);
+      }
+    };
+    fetchConfig();
+  }, []);
+
   return (
     <footer className="bg-dark-bg text-primary-foreground">
       <div className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          {/* Brand */}
           <div>
             <h3 className="text-xl font-extrabold mb-2">VEXTURIA</h3>
             <p className="text-sm text-primary-foreground/70">
@@ -13,7 +30,6 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Navegación */}
           <div>
             <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-primary-foreground/50">
               Navegación
@@ -26,7 +42,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Servicios */}
           <div>
             <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-primary-foreground/50">
               Servicios
@@ -38,15 +53,14 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contacto */}
           <div>
             <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-primary-foreground/50">
               Contacto
             </h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li>info@vexturia.com</li>
-              <li>+34 900 000 000</li>
-              <li>Madrid, España</li>
+              <li>{email}</li>
+              <li>{telefono}</li>
+              <li>{direccion}</li>
             </ul>
           </div>
         </div>

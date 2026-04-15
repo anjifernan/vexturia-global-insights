@@ -1,13 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bot, X, Send } from "lucide-react";
 import { Button } from "./ui/button";
 
 export default function VextaChat() {
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("open-vexta-chat", handler);
+    return () => window.removeEventListener("open-vexta-chat", handler);
+  }, []);
+
   return (
     <>
-      {/* Floating bubble */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
@@ -18,10 +23,8 @@ export default function VextaChat() {
         </button>
       )}
 
-      {/* Chat panel */}
       {open && (
         <div className="fixed bottom-6 right-6 z-50 w-80 sm:w-96 bg-background rounded-xl shadow-2xl border flex flex-col overflow-hidden animate-fade-in">
-          {/* Header */}
           <div className="bg-primary px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-primary-foreground" />
@@ -31,15 +34,11 @@ export default function VextaChat() {
               <X className="h-4 w-4 text-primary-foreground" />
             </button>
           </div>
-
-          {/* Messages */}
           <div className="flex-1 p-4 min-h-[250px] max-h-[350px] overflow-y-auto">
             <div className="bg-muted rounded-lg p-3 text-sm max-w-[80%]">
               Hola, soy <strong>Vexta-1</strong>. ¿En qué puedo ayudarte hoy?
             </div>
           </div>
-
-          {/* Input */}
           <div className="border-t p-3 flex gap-2">
             <input
               type="text"

@@ -1,7 +1,10 @@
 import { useParams, Link } from "react-router-dom";
-import { MapPin, Maximize, BedDouble, Bath, Calendar, ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { MapPin, Maximize, BedDouble, Bath, Calendar, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const property = {
   id: 1,
@@ -28,6 +31,40 @@ const property = {
 
 export default function PropertyDetail() {
   const { id } = useParams();
+  const [nombre, setNombre] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [email, setEmail] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nombre.trim()) {
+      toast.error("El nombre es obligatorio");
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.from("leads").insert({
+      nombre: nombre.trim(),
+      email: email.trim() || null,
+      telefono: telefono.trim() || null,
+      origen: "detalle-inmueble",
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error("Error al enviar");
+      console.error(error);
+    } else {
+      setSubmitted(true);
+      toast.success("¡Solicitud enviada!");
+    }
+  };
+
+  const openVextaChat = () => {
+    // Trigger Vexta chat by dispatching a custom event
+    window.dispatchEvent(new CustomEvent("open-vexta-chat"));
+  };
 
   return (
     <Layout>
@@ -80,7 +117,6 @@ export default function PropertyDetail() {
                 ))}
               </div>
 
-              {/* Map placeholder */}
               <h2 className="text-lg font-bold mb-3">Localización</h2>
               <div className="bg-muted rounded-xl h-64 flex items-center justify-center text-muted-foreground text-sm">
                 Mapa de Google Maps (integración pendiente)
@@ -89,16 +125,57 @@ export default function PropertyDetail() {
 
             {/* Contact sidebar */}
             <div>
-              <div className="sticky top-24 bg-card rounded-xl border p-6 shadow-sm">
-                <h3 className="font-bold mb-4">¿Te interesa esta propiedad?</h3>
-                <form className="space-y-3">
-                  <input placeholder="Nombre" className="w-full border rounded-lg px-3 py-2 text-sm bg-muted" />
-                  <input placeholder="Email" className="w-full border rounded-lg px-3 py-2 text-sm bg-muted" />
-                  <input placeholder="Teléfono" className="w-full border rounded-lg px-3 py-2 text-sm bg-muted" />
-                  <textarea placeholder="Mensaje" rows={3} className="w-full border rounded-lg px-3 py-2 text-sm bg-muted" />
-                  <Button className="w-full">Solicitar información</Button>
-                  <Button variant="outline" className="w-full">Agendar visita con Vexta-1</Button>
-                </form>
+              <div className="sticky top-24 space-y-4">
+                <div className="bg-card rounded-xl border p-6 shadow-sm">
+                  <h3 className="font-bold mb-4">¿Te interesa esta propiedad?</h3>
+                  {!submitted ? (
+                    <form className="space-y-3" onSubmit={handleSubmit}>
+                      <input
+                        value={nombre}
+                        onChange={(e) => setNombre(e.target.value)}
+                        placeholder="Nombre"
+                        className="w-full border rounded-lg px-3 py-2 text-sm bg-muted"
+                      />
+                      <input
+                        value={telefono}
+                        onChange={(e) => setTelefono(e.target.value)}
+                        placeholder="Teléfono"
+                        className="w-full border rounded-lg px-3 py-2 text-sm bg-muted"
+                      />
+                      <input
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email"
+                        type="email"
+                        className="w-full border rounded-lg px-3 py-2 text-sm bg-muted"
+                      />
+                      <textarea
+                        value={mensaje}
+                        onChange={(e) => setMensaje(e.target.value)}
+                        placeholder="Mensaje"
+                        rows={3}
+                        className="w-full border rounded-lg px-3 py-2 text-sm bg-muted"
+                      />
+                      <Button className="w-full" type="submit" disabled={submitting}>
+                        {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                        Solicitar información
+                      </Button>
+                    </form>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-primary font-semibold mb-1">¡Solicitud enviada!</p>
+                      <p className="text-sm text-muted-foreground">Te contactaremos pronto.</p>
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  onClick={openVextaChat}
+                  className="w-full bg-[#00BABA] hover:bg-[#00BABA]/90 text-white font-semibold"
+                  size="lg"
+                >
+                  Agendar visita con Vexta-1
+                </Button>
               </div>
             </div>
           </div>

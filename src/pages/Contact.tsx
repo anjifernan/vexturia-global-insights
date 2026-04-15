@@ -15,9 +15,9 @@ export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
 
   // Config from Supabase
-  const [configTelefono, setConfigTelefono] = useState("+34 900 000 000");
+  const [configTelefono, setConfigTelefono] = useState("+34 661 404 384");
   const [configEmail, setConfigEmail] = useState("info@vexturia.com");
-  const [configDireccion, setConfigDireccion] = useState("Madrid, España");
+  const [configDireccion, setConfigDireccion] = useState("Huelva, España");
 
   useEffect(() => {
     const fetchConfig = async () => {
