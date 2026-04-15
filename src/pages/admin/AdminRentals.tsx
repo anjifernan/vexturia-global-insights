@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,27 +8,33 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Printer, Download, CalendarDays, Home } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Printer, Download, CalendarDays, Home, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
-// Types
+type DBProperty = Tables<"propiedades_turisticas">;
+type DBReservation = Tables<"reservas_turisticas">;
+
+// Local interfaces mapped from DB
 interface Property {
   id: string;
   nombre: string;
   direccion: string;
-  descripcion: string;
-  capacidad: number;
-  activa: boolean;
-  created_at: string;
+  notas: string;
+  capacidad_maxima: number;
+  estado: string;
+  num_habitaciones: number;
+  precio_noche: number;
 }
 
 interface Reservation {
   id: string;
   propiedad_id: string;
-  huesped_nombre: string;
-  huesped_telefono: string;
-  huesped_email: string;
-  huesped_nacionalidad: string;
+  nombre_huesped: string;
+  telefono_huesped: string;
+  email_huesped: string;
+  nacionalidad: string;
   num_adultos: number;
   num_ninos: number;
   direccion_huesped: string;
@@ -39,19 +45,16 @@ interface Reservation {
   importe_total: number;
   importe_anticipo: number;
   importe_pendiente: number;
-  estado: "confirmada" | "cancelada";
+  estado: string;
   notas: string;
-  created_at: string;
 }
 
-const uid = () => crypto.randomUUID();
 const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 const diffDays = (a: string, b: string) => {
   const ms = new Date(b).getTime() - new Date(a).getTime();
   return Math.max(0, Math.round(ms / 86400000));
 };
 
-// Format date DD/MM/YYYY
 const fmtDate = (d: string) => {
   const parts = d.split("-");
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
@@ -60,17 +63,14 @@ const fmtDate = (d: string) => {
 
 const fmtCur = (n: number) => n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 
-const SAMPLE_PROPERTIES: Property[] = [
-  { id: "p1", nombre: "Apartamento Sol", direccion: "Calle Sol 12, Málaga", descripcion: "Estudio frente al mar", capacidad: 4, activa: true, created_at: new Date().toISOString() },
-  { id: "p2", nombre: "Villa Luna", direccion: "Av. de la Costa 45, Marbella", descripcion: "Villa con piscina privada", capacidad: 8, activa: true, created_at: new Date().toISOString() },
-];
-
 export default function AdminRentals() {
-  const [properties, setProperties] = useState<Property[]>(SAMPLE_PROPERTIES);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(properties[0]?.id || "");
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState("calendario");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [propDialog, setPropDialog] = useState(false);
   const [editingProp, setEditingProp] = useState<Property | null>(null);
@@ -78,12 +78,11 @@ export default function AdminRentals() {
   const [editingRes, setEditingRes] = useState<Reservation | null>(null);
   const [detailRes, setDetailRes] = useState<Reservation | null>(null);
 
-  const [propForm, setPropForm] = useState({ nombre: "", direccion: "", descripcion: "", capacidad: 4 });
-
+  const [propForm, setPropForm] = useState({ nombre: "", direccion: "", notas: "", capacidad_maxima: 4, precio_noche: 0 });
   const [resForm, setResForm] = useState({
     propiedad_id: "",
-    huesped_nombre: "", huesped_telefono: "", huesped_email: "",
-    huesped_nacionalidad: "",
+    nombre_huesped: "", telefono_huesped: "", email_huesped: "",
+    nacionalidad: "",
     num_adultos: 1, num_ninos: 0,
     direccion_huesped: "",
     fecha_entrada: "", fecha_salida: "",
@@ -91,12 +90,48 @@ export default function AdminRentals() {
     notas: "",
   });
 
-  const voucherRef = useRef<HTMLDivElement>(null);
-
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const totalDays = daysInMonth(year, month);
   const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
+
+  // ---- FETCH DATA ----
+  const fetchProperties = useCallback(async () => {
+    const { data, error } = await supabase.from("propiedades_turisticas").select("*").order("created_at");
+    if (error) { toast.error("Error cargando propiedades"); return; }
+    const mapped: Property[] = (data || []).map((p) => ({
+      id: p.id, nombre: p.nombre, direccion: p.direccion,
+      notas: p.notas || "", capacidad_maxima: p.capacidad_maxima,
+      estado: p.estado, num_habitaciones: p.num_habitaciones, precio_noche: Number(p.precio_noche),
+    }));
+    setProperties(mapped);
+    if (mapped.length > 0 && !selectedPropertyId) setSelectedPropertyId(mapped[0].id);
+  }, []);
+
+  const fetchReservations = useCallback(async () => {
+    const { data, error } = await supabase.from("reservas_turisticas").select("*").order("fecha_entrada");
+    if (error) { toast.error("Error cargando reservas"); return; }
+    const mapped: Reservation[] = (data || []).map((r) => ({
+      id: r.id, propiedad_id: r.propiedad_id,
+      nombre_huesped: r.nombre_huesped, telefono_huesped: r.telefono_huesped || "",
+      email_huesped: r.email_huesped || "", nacionalidad: r.nacionalidad || "",
+      num_adultos: r.num_adultos, num_ninos: r.num_ninos,
+      direccion_huesped: r.direccion_huesped || "",
+      fecha_entrada: r.fecha_entrada, fecha_salida: r.fecha_salida,
+      num_noches: diffDays(r.fecha_entrada, r.fecha_salida),
+      precio_noche: Number(r.precio_noche), importe_total: Number(r.importe_total),
+      importe_anticipo: Number(r.importe_anticipo), importe_pendiente: Number(r.importe_pendiente),
+      estado: r.estado, notas: r.notas || "",
+    }));
+    setReservations(mapped);
+  }, []);
+
+  useEffect(() => {
+    Promise.all([fetchProperties(), fetchReservations()]).finally(() => setLoading(false));
+  }, [fetchProperties, fetchReservations]);
+
+  // ---- COMPUTED ----
+  const activeProperties = properties.filter((p) => p.estado === "disponible");
 
   const monthReservations = useMemo(() => {
     const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -106,7 +141,6 @@ export default function AdminRentals() {
     );
   }, [reservations, selectedPropertyId, year, month, totalDays]);
 
-  // Year reservations for annual stats
   const yearReservations = useMemo(() => {
     const yearStart = `${year}-01-01`;
     const yearEnd = `${year}-12-31`;
@@ -129,19 +163,15 @@ export default function AdminRentals() {
     return monthReservations.find((r) => dateStr >= r.fecha_entrada && dateStr <= r.fecha_salida);
   };
 
-  // Monthly stats
   const stats = useMemo(() => {
     let occupiedDays = 0;
-    for (let d = 1; d <= totalDays; d++) {
-      if (getDayStatus(d) !== "libre") occupiedDays++;
-    }
+    for (let d = 1; d <= totalDays; d++) { if (getDayStatus(d) !== "libre") occupiedDays++; }
     const freeDays = totalDays - occupiedDays;
-    const occupancyPct = Math.round((occupiedDays / totalDays) * 100);
+    const occupancyPct = totalDays > 0 ? Math.round((occupiedDays / totalDays) * 100) : 0;
     const totalIncome = monthReservations.reduce((s, r) => s + r.importe_total, 0);
     return { occupiedDays, freeDays, occupancyPct, totalIncome, count: monthReservations.length };
   }, [monthReservations, totalDays, year, month]);
 
-  // Annual stats
   const yearStats = useMemo(() => {
     const totalDaysYear = ((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0) ? 366 : 365;
     let occupiedDays = 0;
@@ -150,10 +180,7 @@ export default function AdminRentals() {
       for (let d = 1; d <= md; d++) {
         const dateStr = `${year}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
         for (const r of yearReservations) {
-          if (dateStr >= r.fecha_entrada && dateStr <= r.fecha_salida) {
-            occupiedDays++;
-            break;
-          }
+          if (dateStr >= r.fecha_entrada && dateStr <= r.fecha_salida) { occupiedDays++; break; }
         }
       }
     }
@@ -167,45 +194,55 @@ export default function AdminRentals() {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const monthName = currentDate.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
 
-  // Property CRUD
+  // ---- PROPERTY CRUD (Supabase) ----
   const openNewProp = () => {
     if (properties.length >= 5) { toast.error("Máximo 5 propiedades"); return; }
     setEditingProp(null);
-    setPropForm({ nombre: "", direccion: "", descripcion: "", capacidad: 4 });
+    setPropForm({ nombre: "", direccion: "", notas: "", capacidad_maxima: 4, precio_noche: 0 });
     setPropDialog(true);
   };
   const openEditProp = (p: Property) => {
     setEditingProp(p);
-    setPropForm({ nombre: p.nombre, direccion: p.direccion, descripcion: p.descripcion, capacidad: p.capacidad });
+    setPropForm({ nombre: p.nombre, direccion: p.direccion, notas: p.notas, capacidad_maxima: p.capacidad_maxima, precio_noche: p.precio_noche });
     setPropDialog(true);
   };
-  const saveProp = () => {
+  const saveProp = async () => {
     if (!propForm.nombre.trim()) { toast.error("El nombre es obligatorio"); return; }
+    setSaving(true);
     if (editingProp) {
-      setProperties((prev) => prev.map((p) => (p.id === editingProp.id ? { ...p, ...propForm } : p)));
+      const { error } = await supabase.from("propiedades_turisticas").update({
+        nombre: propForm.nombre, direccion: propForm.direccion,
+        notas: propForm.notas, capacidad_maxima: propForm.capacidad_maxima, precio_noche: propForm.precio_noche,
+      }).eq("id", editingProp.id);
+      if (error) { toast.error("Error actualizando"); setSaving(false); return; }
       toast.success("Propiedad actualizada");
     } else {
-      const newP: Property = { id: uid(), ...propForm, activa: true, created_at: new Date().toISOString() };
-      setProperties((prev) => [...prev, newP]);
-      if (!selectedPropertyId) setSelectedPropertyId(newP.id);
+      const { error } = await supabase.from("propiedades_turisticas").insert({
+        nombre: propForm.nombre, direccion: propForm.direccion,
+        notas: propForm.notas, capacidad_maxima: propForm.capacidad_maxima, precio_noche: propForm.precio_noche,
+      });
+      if (error) { toast.error("Error creando propiedad"); setSaving(false); return; }
       toast.success("Propiedad añadida");
     }
     setPropDialog(false);
+    setSaving(false);
+    await fetchProperties();
   };
-  const deleteProp = (id: string) => {
-    setProperties((prev) => prev.filter((p) => p.id !== id));
-    setReservations((prev) => prev.filter((r) => r.propiedad_id !== id));
-    if (selectedPropertyId === id) setSelectedPropertyId(properties.find((p) => p.id !== id)?.id || "");
+  const deleteProp = async (id: string) => {
+    const { error } = await supabase.from("propiedades_turisticas").delete().eq("id", id);
+    if (error) { toast.error("Error eliminando"); return; }
     toast.success("Propiedad eliminada");
+    if (selectedPropertyId === id) setSelectedPropertyId(properties.find((p) => p.id !== id)?.id || "");
+    await Promise.all([fetchProperties(), fetchReservations()]);
   };
 
-  // Reservation CRUD
+  // ---- RESERVATION CRUD (Supabase) ----
   const openNewRes = () => {
     setEditingRes(null);
     setResForm({
       propiedad_id: selectedPropertyId,
-      huesped_nombre: "", huesped_telefono: "", huesped_email: "",
-      huesped_nacionalidad: "", num_adultos: 1, num_ninos: 0,
+      nombre_huesped: "", telefono_huesped: "", email_huesped: "",
+      nacionalidad: "", num_adultos: 1, num_ninos: 0,
       direccion_huesped: "",
       fecha_entrada: "", fecha_salida: "", precio_noche: 0, importe_anticipo: 0, notas: "",
     });
@@ -215,19 +252,18 @@ export default function AdminRentals() {
     setEditingRes(r);
     setResForm({
       propiedad_id: r.propiedad_id,
-      huesped_nombre: r.huesped_nombre, huesped_telefono: r.huesped_telefono,
-      huesped_email: r.huesped_email, huesped_nacionalidad: r.huesped_nacionalidad,
+      nombre_huesped: r.nombre_huesped, telefono_huesped: r.telefono_huesped,
+      email_huesped: r.email_huesped, nacionalidad: r.nacionalidad,
       num_adultos: r.num_adultos, num_ninos: r.num_ninos,
       direccion_huesped: r.direccion_huesped,
-      fecha_entrada: r.fecha_entrada,
-      fecha_salida: r.fecha_salida, precio_noche: r.precio_noche,
-      importe_anticipo: r.importe_anticipo, notas: r.notas,
+      fecha_entrada: r.fecha_entrada, fecha_salida: r.fecha_salida,
+      precio_noche: r.precio_noche, importe_anticipo: r.importe_anticipo, notas: r.notas,
     });
     setResDialog(true);
     setDetailRes(null);
   };
-  const saveRes = () => {
-    if (!resForm.huesped_nombre.trim() || !resForm.fecha_entrada || !resForm.fecha_salida) {
+  const saveRes = async () => {
+    if (!resForm.nombre_huesped.trim() || !resForm.fecha_entrada || !resForm.fecha_salida) {
       toast.error("Completa los campos obligatorios"); return;
     }
     if (resForm.fecha_salida <= resForm.fecha_entrada) {
@@ -236,31 +272,52 @@ export default function AdminRentals() {
     const nights = diffDays(resForm.fecha_entrada, resForm.fecha_salida);
     const total = nights * resForm.precio_noche;
     const pendiente = Math.max(0, total - resForm.importe_anticipo);
+    setSaving(true);
+
+    const payload = {
+      propiedad_id: resForm.propiedad_id,
+      nombre_huesped: resForm.nombre_huesped,
+      telefono_huesped: resForm.telefono_huesped || null,
+      email_huesped: resForm.email_huesped || null,
+      nacionalidad: resForm.nacionalidad || null,
+      num_adultos: resForm.num_adultos,
+      num_ninos: resForm.num_ninos,
+      direccion_huesped: resForm.direccion_huesped || null,
+      fecha_entrada: resForm.fecha_entrada,
+      fecha_salida: resForm.fecha_salida,
+      precio_noche: resForm.precio_noche,
+      importe_total: total,
+      importe_anticipo: resForm.importe_anticipo,
+      importe_pendiente: pendiente,
+      notas: resForm.notas || null,
+    };
+
     if (editingRes) {
-      setReservations((prev) =>
-        prev.map((r) => (r.id === editingRes.id ? { ...r, ...resForm, num_noches: nights, importe_total: total, importe_pendiente: pendiente } : r))
-      );
+      const { error } = await supabase.from("reservas_turisticas").update(payload).eq("id", editingRes.id);
+      if (error) { toast.error("Error actualizando reserva"); setSaving(false); return; }
       toast.success("Reserva actualizada");
     } else {
-      const newR: Reservation = {
-        id: uid(), ...resForm,
-        num_noches: nights, importe_total: total, importe_pendiente: pendiente,
-        estado: "confirmada", created_at: new Date().toISOString(),
-      };
-      setReservations((prev) => [...prev, newR]);
+      const { error } = await supabase.from("reservas_turisticas").insert(payload);
+      if (error) { toast.error("Error creando reserva"); setSaving(false); return; }
       toast.success("Reserva creada");
     }
     setResDialog(false);
+    setSaving(false);
+    await fetchReservations();
   };
-  const deleteRes = (id: string) => {
-    setReservations((prev) => prev.filter((r) => r.id !== id));
+  const deleteRes = async (id: string) => {
+    const { error } = await supabase.from("reservas_turisticas").delete().eq("id", id);
+    if (error) { toast.error("Error eliminando reserva"); return; }
     setDetailRes(null);
     toast.success("Reserva eliminada");
+    await fetchReservations();
   };
-  const cancelRes = (id: string) => {
-    setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, estado: "cancelada" as const } : r)));
+  const cancelRes = async (id: string) => {
+    const { error } = await supabase.from("reservas_turisticas").update({ estado: "cancelada" }).eq("id", id);
+    if (error) { toast.error("Error cancelando reserva"); return; }
     setDetailRes(null);
     toast.success("Reserva cancelada");
+    await fetchReservations();
   };
 
   const numNights = resForm.fecha_entrada && resForm.fecha_salida && resForm.fecha_salida > resForm.fecha_entrada
@@ -279,7 +336,7 @@ export default function AdminRentals() {
     })
     .sort((a, b) => a.fecha_entrada.localeCompare(b.fecha_entrada));
 
-  // Voucher HTML generation
+  // ---- VOUCHER ----
   const generateVoucherHTML = (r: Reservation) => {
     const prop = properties.find((p) => p.id === r.propiedad_id);
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Voucher ${r.id.slice(0,8)}</title>
@@ -306,10 +363,10 @@ body{font-family:Arial,Helvetica,sans-serif;color:#333;padding:40px}
 </div>
 <div class="section">
   <div class="section-title">Datos del huésped</div>
-  <div class="row"><span class="label">Nombre</span><span class="value">${r.huesped_nombre}</span></div>
+  <div class="row"><span class="label">Nombre</span><span class="value">${r.nombre_huesped}</span></div>
   <div class="row"><span class="label">Dirección</span><span class="value">${r.direccion_huesped || "—"}</span></div>
-  <div class="row"><span class="label">Teléfono</span><span class="value">${r.huesped_telefono || "—"}</span></div>
-  <div class="row"><span class="label">Email</span><span class="value">${r.huesped_email || "—"}</span></div>
+  <div class="row"><span class="label">Teléfono</span><span class="value">${r.telefono_huesped || "—"}</span></div>
+  <div class="row"><span class="label">Email</span><span class="value">${r.email_huesped || "—"}</span></div>
 </div>
 <div class="section">
   <div class="section-title">Datos de la reserva</div>
@@ -381,6 +438,14 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -403,7 +468,7 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
                 <SelectValue placeholder="Selecciona propiedad" />
               </SelectTrigger>
               <SelectContent>
-                {properties.filter((p) => p.activa).map((p) => (
+                {activeProperties.map((p) => (
                   <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                 ))}
               </SelectContent>
@@ -415,7 +480,6 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
             </div>
           </div>
 
-          {/* Calendar */}
           <Card>
             <CardContent className="p-4">
               <div className="flex gap-4 mb-4 text-xs flex-wrap">
@@ -448,13 +512,9 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
             </CardContent>
           </Card>
 
-          {/* Monthly stats */}
           <StatsPanel title={`Resumen mensual — ${monthName}`} data={stats} />
-
-          {/* Annual stats */}
           <StatsPanel title={`Resumen anual — ${year}`} data={yearStats} />
 
-          {/* Reservations list */}
           <Card>
             <CardHeader><CardTitle className="text-base">Reservas del mes — {selectedPropName}</CardTitle></CardHeader>
             <CardContent>
@@ -466,7 +526,7 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
                     <button key={r.id} onClick={() => setDetailRes(r)}
                       className="w-full text-left flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                       <div>
-                        <p className="text-sm font-semibold">{r.huesped_nombre}</p>
+                        <p className="text-sm font-semibold">{r.nombre_huesped}</p>
                         <p className="text-xs text-muted-foreground">{fmtDate(r.fecha_entrada)} → {fmtDate(r.fecha_salida)} · {r.num_noches} noches</p>
                       </div>
                       <div className="text-right">
@@ -481,7 +541,6 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
           </Card>
         </TabsContent>
 
-        {/* Properties tab */}
         <TabsContent value="propiedades" className="space-y-4">
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground">Gestiona tus propiedades turísticas (máx. 5)</p>
@@ -495,8 +554,8 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
                     <div>
                       <h3 className="font-bold text-sm">{p.nombre}</h3>
                       <p className="text-xs text-muted-foreground">{p.direccion}</p>
-                      <p className="text-xs mt-1">{p.descripcion}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Capacidad: {p.capacidad} huéspedes</p>
+                      {p.notas && <p className="text-xs mt-1">{p.notas}</p>}
+                      <p className="text-xs text-muted-foreground mt-1">Capacidad: {p.capacidad_maxima} huéspedes · {fmtCur(p.precio_noche)}/noche</p>
                     </div>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditProp(p)}><Pencil className="h-3.5 w-3.5" /></Button>
@@ -506,6 +565,7 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
                 </CardContent>
               </Card>
             ))}
+            {properties.length === 0 && <p className="text-sm text-muted-foreground col-span-2">No hay propiedades. Añade una para empezar.</p>}
           </div>
         </TabsContent>
       </Tabs>
@@ -517,10 +577,13 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
           <div className="space-y-3">
             <div><Label>Nombre</Label><Input value={propForm.nombre} onChange={(e) => setPropForm({ ...propForm, nombre: e.target.value })} /></div>
             <div><Label>Dirección</Label><Input value={propForm.direccion} onChange={(e) => setPropForm({ ...propForm, direccion: e.target.value })} /></div>
-            <div><Label>Descripción corta</Label><Input value={propForm.descripcion} onChange={(e) => setPropForm({ ...propForm, descripcion: e.target.value })} /></div>
-            <div><Label>Capacidad máxima</Label><Input type="number" min={1} max={20} value={propForm.capacidad} onChange={(e) => setPropForm({ ...propForm, capacidad: Number(e.target.value) })} /></div>
+            <div><Label>Notas / descripción</Label><Input value={propForm.notas} onChange={(e) => setPropForm({ ...propForm, notas: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Capacidad máxima</Label><Input type="number" min={1} max={20} value={propForm.capacidad_maxima} onChange={(e) => setPropForm({ ...propForm, capacidad_maxima: Number(e.target.value) })} /></div>
+              <div><Label>Precio/noche (€)</Label><Input type="number" min={0} value={propForm.precio_noche} onChange={(e) => setPropForm({ ...propForm, precio_noche: Number(e.target.value) })} /></div>
+            </div>
           </div>
-          <DialogFooter><Button onClick={saveProp}>Guardar</Button></DialogFooter>
+          <DialogFooter><Button onClick={saveProp} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Guardar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -534,38 +597,34 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
               <Select value={resForm.propiedad_id} onValueChange={(v) => setResForm({ ...resForm, propiedad_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
-                  {properties.filter((p) => p.activa).map((p) => (
+                  {activeProperties.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Fecha entrada</Label><Input type="date" value={resForm.fecha_entrada} onChange={(e) => setResForm({ ...resForm, fecha_entrada: e.target.value })} /></div>
               <div><Label>Fecha salida</Label><Input type="date" value={resForm.fecha_salida} onChange={(e) => setResForm({ ...resForm, fecha_salida: e.target.value })} /></div>
             </div>
-
             <div className="grid grid-cols-3 gap-3">
               <div><Label>Noches</Label><Input readOnly value={numNights} className="bg-muted" /></div>
               <div><Label>Precio/noche (€)</Label><Input type="number" min={0} value={resForm.precio_noche} onChange={(e) => setResForm({ ...resForm, precio_noche: Number(e.target.value) })} /></div>
               <div><Label>Total (€)</Label><Input readOnly value={totalAmount.toFixed(2)} className="bg-muted font-bold" /></div>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Anticipo / señal (€)</Label><Input type="number" min={0} value={resForm.importe_anticipo} onChange={(e) => setResForm({ ...resForm, importe_anticipo: Number(e.target.value) })} /></div>
               <div><Label>Pendiente de pago (€)</Label><Input readOnly value={pendingAmount.toFixed(2)} className="bg-muted font-bold text-red-600" /></div>
             </div>
-
             <hr />
             <p className="text-sm font-semibold">Datos del huésped</p>
-            <div><Label>Nombre completo</Label><Input value={resForm.huesped_nombre} onChange={(e) => setResForm({ ...resForm, huesped_nombre: e.target.value })} /></div>
+            <div><Label>Nombre completo</Label><Input value={resForm.nombre_huesped} onChange={(e) => setResForm({ ...resForm, nombre_huesped: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Teléfono</Label><Input value={resForm.huesped_telefono} onChange={(e) => setResForm({ ...resForm, huesped_telefono: e.target.value })} /></div>
-              <div><Label>Email</Label><Input type="email" value={resForm.huesped_email} onChange={(e) => setResForm({ ...resForm, huesped_email: e.target.value })} /></div>
+              <div><Label>Teléfono</Label><Input value={resForm.telefono_huesped} onChange={(e) => setResForm({ ...resForm, telefono_huesped: e.target.value })} /></div>
+              <div><Label>Email</Label><Input type="email" value={resForm.email_huesped} onChange={(e) => setResForm({ ...resForm, email_huesped: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Nacionalidad</Label><Input value={resForm.huesped_nacionalidad} onChange={(e) => setResForm({ ...resForm, huesped_nacionalidad: e.target.value })} /></div>
+              <div><Label>Nacionalidad</Label><Input value={resForm.nacionalidad} onChange={(e) => setResForm({ ...resForm, nacionalidad: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label>Adultos</Label><Input type="number" min={1} value={resForm.num_adultos} onChange={(e) => setResForm({ ...resForm, num_adultos: Math.max(1, Number(e.target.value)) })} /></div>
                 <div><Label>Niños</Label><Input type="number" min={0} value={resForm.num_ninos} onChange={(e) => setResForm({ ...resForm, num_ninos: Math.max(0, Number(e.target.value)) })} /></div>
@@ -574,21 +633,21 @@ ${r.notas ? `<div class="section"><div class="section-title">Notas</div><p style
             <div><Label>Dirección del huésped</Label><Textarea placeholder="Calle, número, ciudad, provincia, código postal, país" value={resForm.direccion_huesped} onChange={(e) => setResForm({ ...resForm, direccion_huesped: e.target.value })} /></div>
             <div><Label>Notas internas</Label><Textarea value={resForm.notas} onChange={(e) => setResForm({ ...resForm, notas: e.target.value })} /></div>
           </div>
-          <DialogFooter><Button onClick={saveRes}>Guardar reserva</Button></DialogFooter>
+          <DialogFooter><Button onClick={saveRes} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Guardar reserva</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Reservation Detail Dialog */}
+      {/* Reservation Detail */}
       <Dialog open={!!detailRes} onOpenChange={() => setDetailRes(null)}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Detalle de reserva</DialogTitle></DialogHeader>
           {detailRes && (
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Propiedad</span><span className="font-medium">{properties.find((p) => p.id === detailRes.propiedad_id)?.nombre}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Huésped</span><span className="font-medium">{detailRes.huesped_nombre}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Teléfono</span><span>{detailRes.huesped_telefono || "—"}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span>{detailRes.huesped_email || "—"}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Nacionalidad</span><span>{detailRes.huesped_nacionalidad || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Huésped</span><span className="font-medium">{detailRes.nombre_huesped}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Teléfono</span><span>{detailRes.telefono_huesped || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span>{detailRes.email_huesped || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Nacionalidad</span><span>{detailRes.nacionalidad || "—"}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Adultos</span><span>{detailRes.num_adultos}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Niños</span><span>{detailRes.num_ninos}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Dirección</span><span className="text-right max-w-[200px]">{detailRes.direccion_huesped || "—"}</span></div>
