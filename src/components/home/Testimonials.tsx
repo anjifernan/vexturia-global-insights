@@ -7,7 +7,7 @@ const testimonials = [
   },
   {
     name: "Carlos Rodríguez",
-    text: "El asistente Vexta-1 me ayudó a encontrar el hogar perfecto para mi familia sin perder tiempo en visitas innecesarias.",
+    text: "El asistente VEX me ayudó a encontrar el hogar perfecto para mi familia sin perder tiempo en visitas innecesarias.",
   },
   {
     name: "Ana Martínez",

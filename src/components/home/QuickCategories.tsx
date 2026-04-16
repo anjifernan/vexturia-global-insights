@@ -1,4 +1,5 @@
 import { Building2, TrendingUp, Home } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const categories = [
   {
@@ -6,18 +7,21 @@ const categories = [
     title: "Viviendas de Estreno",
     desc: "Obra nueva con las últimas calidades",
     premium: false,
+    filter: "?tipo=Piso",
   },
   {
     icon: TrendingUp,
     title: "Oportunidades de Inversión",
     desc: "Activos con alto potencial de rentabilidad",
     premium: true,
+    filter: "?operacion=Compra",
   },
   {
     icon: Home,
     title: "Alquiler Residencial",
     desc: "Tu hogar ideal, sin compromiso de compra",
     premium: false,
+    filter: "?operacion=Alquiler",
   },
 ];
 
@@ -30,9 +34,10 @@ export default function QuickCategories() {
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
           {categories.map((cat) => (
-            <div
+            <Link
+              to={`/propiedades${cat.filter}`}
               key={cat.title}
-              className="group relative bg-card rounded-xl border p-8 text-center hover:shadow-lg transition-shadow cursor-pointer"
+              className="group relative bg-card rounded-xl border p-8 text-center hover:shadow-lg transition-shadow cursor-pointer block"
             >
               {cat.premium && (
                 <span className="absolute top-4 right-4 bg-accent text-accent-foreground text-xs font-bold px-3 py-1 rounded-full">
@@ -44,7 +49,7 @@ export default function QuickCategories() {
               </div>
               <h3 className="text-lg font-bold mb-2">{cat.title}</h3>
               <p className="text-sm text-muted-foreground">{cat.desc}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

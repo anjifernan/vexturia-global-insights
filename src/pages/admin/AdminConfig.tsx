@@ -82,7 +82,7 @@ export default function AdminConfig() {
           </div>
           <div className="flex justify-between items-center">
             <div>
-              <p className="font-medium text-sm">Vexta-1</p>
+              <p className="font-medium text-sm">VEX</p>
               <p className="text-xs text-muted-foreground">Asistente IA</p>
             </div>
             <span className="text-xs px-3 py-1 rounded-full bg-accent/20 text-accent-foreground font-medium">Pendiente</span>

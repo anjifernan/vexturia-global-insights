@@ -62,7 +62,6 @@ export default function PropertyDetail() {
   };
 
   const openVextaChat = () => {
-    // Trigger Vexta chat by dispatching a custom event
     window.dispatchEvent(new CustomEvent("open-vexta-chat"));
   };
 
@@ -74,7 +73,6 @@ export default function PropertyDetail() {
             <ArrowLeft className="h-4 w-4" /> Volver a propiedades
           </Link>
 
-          {/* Gallery */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
             <div className="md:col-span-2">
               <img src={property.images[0]} alt={property.title} className="w-full h-[400px] object-cover rounded-xl" width={1200} height={600} />
@@ -87,7 +85,6 @@ export default function PropertyDetail() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Details */}
             <div className="lg:col-span-2">
               <div className="flex items-center gap-3 mb-2">
                 {property.premium && (
@@ -123,39 +120,16 @@ export default function PropertyDetail() {
               </div>
             </div>
 
-            {/* Contact sidebar */}
             <div>
               <div className="sticky top-24 space-y-4">
                 <div className="bg-card rounded-xl border p-6 shadow-sm">
                   <h3 className="font-bold mb-4">¿Te interesa esta propiedad?</h3>
                   {!submitted ? (
                     <form className="space-y-3" onSubmit={handleSubmit}>
-                      <input
-                        value={nombre}
-                        onChange={(e) => setNombre(e.target.value)}
-                        placeholder="Nombre"
-                        className="w-full border rounded-lg px-3 py-2 text-sm bg-muted"
-                      />
-                      <input
-                        value={telefono}
-                        onChange={(e) => setTelefono(e.target.value)}
-                        placeholder="Teléfono"
-                        className="w-full border rounded-lg px-3 py-2 text-sm bg-muted"
-                      />
-                      <input
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email"
-                        type="email"
-                        className="w-full border rounded-lg px-3 py-2 text-sm bg-muted"
-                      />
-                      <textarea
-                        value={mensaje}
-                        onChange={(e) => setMensaje(e.target.value)}
-                        placeholder="Mensaje"
-                        rows={3}
-                        className="w-full border rounded-lg px-3 py-2 text-sm bg-muted"
-                      />
+                      <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre" className="w-full border rounded-lg px-3 py-2 text-sm bg-muted" />
+                      <input value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Teléfono" className="w-full border rounded-lg px-3 py-2 text-sm bg-muted" />
+                      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" className="w-full border rounded-lg px-3 py-2 text-sm bg-muted" />
+                      <textarea value={mensaje} onChange={(e) => setMensaje(e.target.value)} placeholder="Mensaje" rows={3} className="w-full border rounded-lg px-3 py-2 text-sm bg-muted" />
                       <Button className="w-full" type="submit" disabled={submitting}>
                         {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                         Solicitar información
@@ -174,7 +148,7 @@ export default function PropertyDetail() {
                   className="w-full bg-[#00BABA] hover:bg-[#00BABA]/90 text-white font-semibold"
                   size="lg"
                 >
-                  Agendar visita con Vexta-1
+                  Agendar visita con VEX
                 </Button>
               </div>
             </div>
