@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import logoImg from "@/assets/logo-vexturia.png";
 
 export default function Footer() {
   const [telefono, setTelefono] = useState("+34 661 404 384");
@@ -24,8 +25,10 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div>
-            <h3 className="text-xl font-extrabold mb-2">VEXTURIA</h3>
-            <p className="text-sm text-primary-foreground/70">
+            <Link to="/">
+              <img src={logoImg} alt="Vexturia" className="h-[40px] w-auto" />
+            </Link>
+            <p className="text-sm text-primary-foreground/70 mt-2">
               Global Real Estate Management | IA Labs
             </p>
           </div>
