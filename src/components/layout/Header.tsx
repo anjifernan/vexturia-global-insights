@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoImg from "@/assets/logo-vexturia.png";
 
 const navItems = [
   { label: "Inicio", path: "/" },
