@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import logoImg from "@/assets/logo-vexturia.png";
 
 export default function Footer() {
   const [telefono, setTelefono] = useState("+34 661 404 384");
