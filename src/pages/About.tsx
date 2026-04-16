@@ -1,10 +1,11 @@
 import Layout from "@/components/layout/Layout";
 import { Users, Lightbulb, Heart } from "lucide-react";
 import fernandoImg from "@/assets/fernando-sanchez.png";
+import angelImg from "@/assets/angel-jimenez.png";
 
 const teamMembers = [
   { name: "Fernando Sánchez", role: "Gerente", image: fernandoImg },
-  { name: "Miembro del equipo", role: "Cargo", image: null },
+  { name: "Ángel Jiménez", role: "Gestor IA", image: angelImg },
   { name: "Miembro del equipo", role: "Cargo", image: null },
   { name: "Miembro del equipo", role: "Cargo", image: null },
 ];
