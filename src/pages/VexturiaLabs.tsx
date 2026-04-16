@@ -11,11 +11,13 @@ const capabilities = [
 ];
 
 export default function VexturiaLabs() {
+  const openChat = () => {
+    window.dispatchEvent(new CustomEvent("open-vexta-chat"));
+  };
+
   return (
     <Layout>
-      {/* Hero */}
       <section className="relative py-20 bg-dark-bg overflow-hidden">
-        {/* Neural network visual effect */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full border border-primary animate-pulse" />
           <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full border border-primary animate-pulse delay-300" />
@@ -33,9 +35,9 @@ export default function VexturiaLabs() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="text-2xl font-extrabold mb-4">Conoce a Vexta-1</h2>
+            <h2 className="text-2xl font-extrabold mb-4">Conoce a VEX</h2>
             <p className="text-muted-foreground">
-              Vexta-1 es nuestro agente de inteligencia artificial diseñado específicamente para el sector inmobiliario.
+              VEX es nuestro agente de inteligencia artificial diseñado específicamente para el sector inmobiliario.
               Atiende, cualifica y asesora a clientes de forma autónoma, liberando a los profesionales para centrarse
               en lo que realmente importa: cerrar operaciones.
             </p>
@@ -52,7 +54,7 @@ export default function VexturiaLabs() {
           </div>
 
           <div className="text-center">
-            <Button size="lg">Probar Vexta-1</Button>
+            <Button size="lg" onClick={openChat}>Probar VEX</Button>
           </div>
         </div>
       </section>

@@ -54,9 +54,10 @@ export default function FeaturedProperties() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {properties.map((p) => (
-            <div
+            <Link
+              to={`/propiedades/${p.id}`}
               key={p.id}
-              className="group bg-card rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow border"
+              className="group bg-card rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow border block"
             >
               <div className="relative overflow-hidden">
                 <img
@@ -96,7 +97,7 @@ export default function FeaturedProperties() {
                   {p.price.toLocaleString("es-ES")} €
                 </p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 

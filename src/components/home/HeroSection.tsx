@@ -14,12 +14,12 @@ export default function HeroSection() {
       />
       <div className="absolute inset-0 bg-foreground/60" />
       <div className="relative z-10 container mx-auto px-4 text-center">
-        <h1 className="text-4xl md:text-6xl font-extrabold text-primary-foreground mb-6 leading-tight">
+        <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight">
           Inteligencia Global,
           <br />
           Propiedad Real.
         </h1>
-        <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10">
+        <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-10">
           Simplificamos la compra, venta y gestión de propiedades con tecnología
           de vanguardia e inteligencia artificial.
         </p>
@@ -30,7 +30,7 @@ export default function HeroSection() {
           <Button
             size="lg"
             variant="outline"
-            className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10"
+            className="border-white text-white hover:bg-white/20 hover:text-white"
             asChild
           >
             <Link to="/valoracion">¿Cuánto vale tu vivienda?</Link>

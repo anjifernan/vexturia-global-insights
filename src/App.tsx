@@ -11,6 +11,9 @@ import VexturiaGlobal from "./pages/VexturiaGlobal";
 import VexturiaLabs from "./pages/VexturiaLabs";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Privacy from "./pages/Privacy";
+import Legal from "./pages/Legal";
+import Cookies from "./pages/Cookies";
 import AdminLayout from "./pages/admin/AdminLayout";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +34,9 @@ const App = () => (
           <Route path="/labs" element={<VexturiaLabs />} />
           <Route path="/sobre-nosotros" element={<About />} />
           <Route path="/contacto" element={<Contact />} />
+          <Route path="/privacidad" element={<Privacy />} />
+          <Route path="/aviso-legal" element={<Legal />} />
+          <Route path="/cookies" element={<Cookies />} />
           <Route path="/admin/*" element={<AdminLayout />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

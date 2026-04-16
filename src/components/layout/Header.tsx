@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { label: "Inicio", path: "/" },
+  { label: "Sobre Nosotros", path: "/sobre-nosotros" },
   { label: "Propiedades", path: "/propiedades" },
   { label: "Valoración", path: "/valoracion" },
   { label: "Vexturia Global", path: "/global" },
   { label: "Vexturia Labs", path: "/labs" },
-  { label: "Sobre Nosotros", path: "/sobre-nosotros" },
   { label: "Contacto", path: "/contacto" },
 ];
 
@@ -24,6 +24,10 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  const openChat = () => {
+    window.dispatchEvent(new CustomEvent("open-vexta-chat"));
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -33,14 +37,12 @@ export default function Header() {
       }`}
     >
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
           <span className="text-xl font-heading font-extrabold tracking-tight text-foreground">
             VEXTURIA
           </span>
         </Link>
 
-        {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-6">
           {navItems.map((item) => (
             <Link
@@ -57,15 +59,13 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* CTA */}
         <div className="hidden lg:flex items-center gap-3">
-          <Button size="sm" className="gap-2">
+          <Button size="sm" className="gap-2" onClick={openChat}>
             <Bot className="h-4 w-4" />
-            Habla con Vexta-1
+            Habla con VEX
           </Button>
         </div>
 
-        {/* Mobile toggle */}
         <button
           className="lg:hidden text-foreground"
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -74,7 +74,6 @@ export default function Header() {
         </button>
       </div>
 
-      {/* Mobile menu */}
       {mobileOpen && (
         <div className="lg:hidden bg-background border-t">
           <nav className="flex flex-col p-4 gap-3">
@@ -92,9 +91,9 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
-            <Button size="sm" className="gap-2 mt-2 w-full">
+            <Button size="sm" className="gap-2 mt-2 w-full" onClick={openChat}>
               <Bot className="h-4 w-4" />
-              Habla con Vexta-1
+              Habla con VEX
             </Button>
           </nav>
         </div>

@@ -36,6 +36,7 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
               <li><Link to="/" className="hover:text-primary transition-colors">Inicio</Link></li>
+              <li><Link to="/sobre-nosotros" className="hover:text-primary transition-colors">Sobre Nosotros</Link></li>
               <li><Link to="/propiedades" className="hover:text-primary transition-colors">Propiedades</Link></li>
               <li><Link to="/valoracion" className="hover:text-primary transition-colors">Valoración</Link></li>
               <li><Link to="/contacto" className="hover:text-primary transition-colors">Contacto</Link></li>
@@ -70,9 +71,9 @@ export default function Footer() {
             © {new Date().getFullYear()} Vexturia. Todos los derechos reservados.
           </p>
           <div className="flex gap-4 text-xs text-primary-foreground/50">
-            <span>Política de Privacidad</span>
-            <span>Aviso Legal</span>
-            <span>Cookies</span>
+            <Link to="/privacidad" className="hover:text-primary transition-colors">Política de Privacidad</Link>
+            <Link to="/aviso-legal" className="hover:text-primary transition-colors">Aviso Legal</Link>
+            <Link to="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
           </div>
         </div>
       </div>
