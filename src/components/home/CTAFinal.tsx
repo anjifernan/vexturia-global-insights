@@ -20,7 +20,7 @@ export default function CTAFinal() {
           <Button
             size="lg"
             variant="outline"
-            className="border-white text-white hover:bg-white/20 hover:text-white font-semibold"
+            className="bg-white text-black border-white hover:bg-transparent hover:text-black hover:border-white font-semibold"
             asChild
           >
             <Link to="/contacto">Contactar con un experto</Link>
