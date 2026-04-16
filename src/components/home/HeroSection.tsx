@@ -30,7 +30,7 @@ export default function HeroSection() {
           <Button
             size="lg"
             variant="outline"
-            className="border-white text-white hover:bg-white/20 hover:text-white"
+            className="bg-white text-black border-white hover:bg-transparent hover:text-white hover:border-white"
             asChild
           >
             <Link to="/valoracion">¿Cuánto vale tu vivienda?</Link>
