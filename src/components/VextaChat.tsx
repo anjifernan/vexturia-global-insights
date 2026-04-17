@@ -71,7 +71,7 @@ export default function VextaChat() {
 
     try {
       const { data, error } = await supabase.functions.invoke("vex-chat", {
-        body: { messages: next.filter((m) => m.role !== "assistant" || m !== INITIAL_MESSAGE || next.indexOf(m) > 0).map(({ role, content }) => ({ role, content })) },
+        body: { messages: next.map(({ role, content }) => ({ role, content })) },
       });
       if (error) throw error;
       const reply = (data as { reply?: string })?.reply ?? "Lo siento, no he podido responder.";
