@@ -40,6 +40,27 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Fire-and-forget: emails (admin notification + client confirmation)
+    const emailPayloadBase = { nombre, telefono, email, origen: "vex-chat" };
+    const sendEmail = async (body: Record<string, unknown>) => {
+      try {
+        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-resend-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify(body),
+        });
+      } catch (e) {
+        console.error("send-resend-email error:", e);
+      }
+    };
+    await Promise.all([
+      sendEmail({ type: "admin_lead", ...emailPayloadBase }),
+      email ? sendEmail({ type: "client_confirmation", nombre, email }) : Promise.resolve(),
+    ]);
+
     return new Response(JSON.stringify({ ok: true, lead: data }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

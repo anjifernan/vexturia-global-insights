@@ -80,6 +80,19 @@ export default function Valuation() {
     } else {
       setLeadSubmitted(true);
       toast.success("¡Datos enviados! Aquí tienes tu valoración.");
+
+      // Send emails: admin valuation notification + client confirmation
+      const valoracion = {
+        municipio, barrio, direccion,
+        tipo: tipoInmueble, metros, habitaciones, banos, anio, planta,
+        estado: estadoInmueble, extras, operacion,
+      };
+      supabase.functions.invoke("send-resend-email", {
+        body: { type: "admin_valuation", nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim(), valoracion },
+      }).catch((e) => console.error("admin_valuation email", e));
+      supabase.functions.invoke("send-resend-email", {
+        body: { type: "client_confirmation", nombre: nombre.trim(), email: email.trim() },
+      }).catch((e) => console.error("client_confirmation email", e));
     }
   };
 
@@ -110,6 +123,19 @@ export default function Valuation() {
     } else {
       setContactSubmitted(true);
       toast.success("¡Solicitud enviada! Un experto te contactará pronto.");
+
+      supabase.functions.invoke("send-resend-email", {
+        body: {
+          type: "admin_lead",
+          nombre: contactNombre.trim(),
+          email: contactEmail.trim(),
+          telefono: contactTelefono.trim(),
+          origen: "valoracion-contacto",
+        },
+      }).catch((e) => console.error("admin_lead email", e));
+      supabase.functions.invoke("send-resend-email", {
+        body: { type: "client_confirmation", nombre: contactNombre.trim(), email: contactEmail.trim() },
+      }).catch((e) => console.error("client_confirmation email", e));
     }
   };
 
