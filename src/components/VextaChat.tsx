@@ -44,13 +44,16 @@ export default function VextaChat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-  const trySaveLead = async (text: string) => {
+  const trySaveLead = async (text: string, history: Msg[]) => {
     if (leadSaved) return;
     const { nombre, telefono, email } = extractContact(text);
     if (nombre && (telefono || email)) {
       try {
+        const conversacion = history
+          .map((m) => `${m.role === "user" ? "Cliente" : "VEX"}: ${m.content}`)
+          .join("\n\n");
         const { error } = await supabase.functions.invoke("vex-save-lead", {
-          body: { nombre, telefono, email },
+          body: { nombre, telefono, email, conversacion },
         });
         if (!error) setLeadSaved(true);
       } catch (e) {
