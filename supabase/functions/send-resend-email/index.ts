@@ -1,7 +1,7 @@
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const ADMIN_EMAIL = "hola@vexturia.com";
+const ADMIN_EMAIL = "vexturiaglobal@gmail.com";
 const FROM_LEAD = "Vexturia <hola@vexturia.com>";
 const FROM_NOTIFY = "Vexturia Alerts <hola@vexturia.com>";
 
