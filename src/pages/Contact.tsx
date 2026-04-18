@@ -38,20 +38,38 @@ export default function Contact() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("leads").insert({
+    const payload = {
       nombre: nombre.trim(),
       email: email.trim(),
       telefono: telefono.trim() || null,
-      origen: "contacto-web",
-    });
-    setSubmitting(false);
+      origen: `contacto-web${tipoConsulta && tipoConsulta !== "Tipo de consulta" ? ` · ${tipoConsulta}` : ""}`,
+    };
+    const { error } = await supabase.from("leads").insert(payload);
     if (error) {
+      setSubmitting(false);
       toast.error("Error al enviar el formulario");
       console.error(error);
-    } else {
-      setSubmitted(true);
-      toast.success("¡Mensaje enviado correctamente!");
+      return;
     }
+
+    // Fire emails (admin notification + client confirmation)
+    const adminPayload = {
+      type: "admin_lead",
+      nombre: payload.nombre,
+      email: payload.email,
+      telefono: payload.telefono,
+      origen: `${payload.origen}${mensaje.trim() ? ` — ${mensaje.trim().slice(0, 500)}` : ""}`,
+    };
+    await Promise.all([
+      supabase.functions.invoke("send-resend-email", { body: adminPayload }),
+      supabase.functions.invoke("send-resend-email", {
+        body: { type: "client_confirmation", nombre: payload.nombre, email: payload.email },
+      }),
+    ]).catch((e) => console.error("email error:", e));
+
+    setSubmitting(false);
+    setSubmitted(true);
+    toast.success("¡Mensaje enviado correctamente!");
   };
 
   return (
