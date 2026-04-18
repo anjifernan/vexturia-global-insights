@@ -90,6 +90,11 @@ Deno.serve(async (req) => {
 
     if (type === "admin_lead") {
       if (!nombre) throw new Error("nombre requerido");
+      const conversacionHtml = conversacion
+        ? `
+        <h3 style="margin:24px 0 8px;font-size:15px;color:#1A223B;">Conversación con VEX</h3>
+        <div style="background:#f9fafb;border-radius:8px;padding:16px;font-size:13px;line-height:1.6;color:#374151;white-space:pre-wrap;font-family:'Montserrat',Arial,sans-serif;max-height:none;">${escape(conversacion)}</div>`
+        : "";
       const html = wrap(
         "Nuevo lead",
         `
@@ -101,7 +106,8 @@ Deno.serve(async (req) => {
           <tr><td style="font-weight:600;">Email</td><td>${escape(email || "—")}</td></tr>
           <tr><td style="font-weight:600;">Origen</td><td>${escape(origen || "—")}</td></tr>
           <tr><td style="font-weight:600;">Fecha</td><td>${escape(fecha)}</td></tr>
-        </table>`
+        </table>
+        ${conversacionHtml}`
       );
       results.push(
         await sendEmail({
