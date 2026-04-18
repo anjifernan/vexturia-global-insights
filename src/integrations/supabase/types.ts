@@ -22,6 +22,7 @@ export type Database = {
           id: string
           telefono: string | null
           updated_at: string
+          vex_system_prompt: string | null
         }
         Insert: {
           created_at?: string
@@ -30,6 +31,7 @@ export type Database = {
           id?: string
           telefono?: string | null
           updated_at?: string
+          vex_system_prompt?: string | null
         }
         Update: {
           created_at?: string
@@ -38,6 +40,7 @@ export type Database = {
           id?: string
           telefono?: string | null
           updated_at?: string
+          vex_system_prompt?: string | null
         }
         Relationships: []
       }
