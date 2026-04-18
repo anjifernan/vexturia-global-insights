@@ -14,6 +14,7 @@ interface RequestBody {
   email?: string;
   telefono?: string;
   origen?: string;
+  conversacion?: string;
   // valuation extras
   valoracion?: Record<string, unknown>;
 }
