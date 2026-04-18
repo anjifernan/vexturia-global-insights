@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { nombre, telefono, email } = await req.json();
+    const { nombre, telefono, email, conversacion } = await req.json();
 
     if (!nombre || (!telefono && !email)) {
       return new Response(
@@ -21,6 +21,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const notas = conversacion
+      ? `Conversación con VEX:\n\n${String(conversacion).slice(0, 8000)}`
+      : null;
+
     const { data, error } = await supabase
       .from("leads")
       .insert({
@@ -28,6 +32,7 @@ Deno.serve(async (req) => {
         telefono: telefono ? String(telefono).slice(0, 50) : null,
         email: email ? String(email).slice(0, 200) : null,
         origen: "vex-chat",
+        notas,
       })
       .select()
       .single();
@@ -41,7 +46,7 @@ Deno.serve(async (req) => {
     }
 
     // Fire-and-forget: emails (admin notification + client confirmation)
-    const emailPayloadBase = { nombre, telefono, email, origen: "vex-chat" };
+    const emailPayloadBase = { nombre, telefono, email, origen: "vex-chat", conversacion };
     const sendEmail = async (body: Record<string, unknown>) => {
       try {
         await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-resend-email`, {

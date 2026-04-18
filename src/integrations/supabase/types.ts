@@ -48,6 +48,7 @@ export type Database = {
           estado: string
           id: string
           nombre: string
+          notas: string | null
           origen: string
           telefono: string | null
           updated_at: string
@@ -58,6 +59,7 @@ export type Database = {
           estado?: string
           id?: string
           nombre: string
+          notas?: string | null
           origen?: string
           telefono?: string | null
           updated_at?: string
@@ -68,6 +70,7 @@ export type Database = {
           estado?: string
           id?: string
           nombre?: string
+          notas?: string | null
           origen?: string
           telefono?: string | null
           updated_at?: string
