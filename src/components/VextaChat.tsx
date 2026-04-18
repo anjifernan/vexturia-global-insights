@@ -70,7 +70,7 @@ export default function VextaChat() {
     setMessages(next);
     setLoading(true);
 
-    trySaveLead(text);
+    trySaveLead(text, next);
 
     try {
       const { data, error } = await supabase.functions.invoke("vex-chat", {
