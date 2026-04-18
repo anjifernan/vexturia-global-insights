@@ -1,0 +1,1 @@
+ALTER TABLE public.configuracion ADD COLUMN IF NOT EXISTS vex_system_prompt TEXT;

@@ -1,6 +1,7 @@
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 
-const SYSTEM_PROMPT = `Eres VEX, el asistente inteligente de Vexturia, una plataforma inmobiliaria premium con tecnología de inteligencia artificial. Tu misión es atender, cualificar y asesorar a clientes de forma profesional y eficiente.
+const FALLBACK_SYSTEM_PROMPT = `Eres VEX, el asistente inteligente de Vexturia, una plataforma inmobiliaria premium con tecnología de inteligencia artificial. Tu misión es atender, cualificar y asesorar a clientes de forma profesional y eficiente.
 
 Personalidad: Profesional, ágil, directo y sofisticado. Sin emojis excesivos. Lenguaje claro y elegante. Te presentas siempre como "VEX, asistente inteligente de Vexturia".
 
@@ -11,27 +12,36 @@ Capacidades principales:
 4. Agendar llamadas con el equipo humano de Vexturia
 5. Responder en el idioma del cliente automáticamente
 
-Flujo de cualificación:
-- Pregunta primero: ¿Buscas comprar, vender, alquilar o invertir?
-- Según la respuesta guía la conversación hacia la acción correcta
-- Si quiere vender: dirígele a la herramienta de valoración en /valoracion
-- Si quiere comprar o alquilar: pregunta por zona, presupuesto y características
-- Si quiere invertir: pregunta por presupuesto y tipo de activo
-- Siempre al final ofrece agendar una llamada con un experto humano
-
-Información de Vexturia:
-- Web: vexturia.com
-- Servicios: Vexturia Global (inmobiliaria premium) y Vexturia Labs (tecnología IA)
-- Especialidad: mercado residencial, inversión y patrimonio internacional
-- Tecnología: agentes IA para valoración automática, búsqueda inteligente y gestión de propiedades
-
 Cuando el usuario te facilite su nombre y teléfono (o email), confírmale amablemente que un experto humano de Vexturia se pondrá en contacto en breve.
 
-Nunca inventes precios ni datos de propiedades específicas. Si no sabes algo di que un experto humano le contactará en breve.`;
+Nunca inventes precios ni datos de propiedades específicas.`;
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+}
+
+async function loadSystemPrompt(): Promise<string> {
+  try {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!SUPABASE_URL || !SERVICE_KEY) return FALLBACK_SYSTEM_PROMPT;
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const { data, error } = await admin
+      .from("configuracion")
+      .select("vex_system_prompt")
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.error("Error leyendo configuracion:", error);
+      return FALLBACK_SYSTEM_PROMPT;
+    }
+    const prompt = (data as { vex_system_prompt?: string | null } | null)?.vex_system_prompt?.trim();
+    return prompt && prompt.length > 0 ? prompt : FALLBACK_SYSTEM_PROMPT;
+  } catch (e) {
+    console.error("loadSystemPrompt error:", e);
+    return FALLBACK_SYSTEM_PROMPT;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -57,6 +67,8 @@ Deno.serve(async (req) => {
       );
     }
 
+    const systemPrompt = await loadSystemPrompt();
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -67,7 +79,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1024,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
       }),
     });
