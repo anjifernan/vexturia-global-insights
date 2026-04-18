@@ -45,20 +45,44 @@ export default function PropertyDetail() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("leads").insert({
+    const payload = {
       nombre: nombre.trim(),
       email: email.trim() || null,
       telefono: telefono.trim() || null,
-      origen: "detalle-inmueble",
-    });
-    setSubmitting(false);
+      origen: `detalle-inmueble${id ? ` · #${id}` : ""}${property?.title ? ` · ${property.title}` : ""}`,
+    };
+    const { error } = await supabase.from("leads").insert(payload);
     if (error) {
+      setSubmitting(false);
       toast.error("Error al enviar");
       console.error(error);
-    } else {
-      setSubmitted(true);
-      toast.success("¡Solicitud enviada!");
+      return;
     }
+
+    const adminOrigen = `${payload.origen}${mensaje.trim() ? ` — ${mensaje.trim().slice(0, 500)}` : ""}`;
+    const tasks: Promise<unknown>[] = [
+      supabase.functions.invoke("send-resend-email", {
+        body: {
+          type: "admin_lead",
+          nombre: payload.nombre,
+          email: payload.email,
+          telefono: payload.telefono,
+          origen: adminOrigen,
+        },
+      }),
+    ];
+    if (payload.email) {
+      tasks.push(
+        supabase.functions.invoke("send-resend-email", {
+          body: { type: "client_confirmation", nombre: payload.nombre, email: payload.email },
+        })
+      );
+    }
+    await Promise.all(tasks).catch((e) => console.error("email error:", e));
+
+    setSubmitting(false);
+    setSubmitted(true);
+    toast.success("¡Solicitud enviada!");
   };
 
   const openVextaChat = () => {
