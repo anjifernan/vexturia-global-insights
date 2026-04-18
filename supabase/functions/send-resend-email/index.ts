@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as RequestBody;
-    const { type, nombre, email, telefono, origen, valoracion } = body;
+    const { type, nombre, email, telefono, origen, valoracion, conversacion } = body;
 
     if (!type) {
       return new Response(JSON.stringify({ error: "type requerido" }), {
